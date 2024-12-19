@@ -1,6 +1,6 @@
 const express = require('express')
 const cors = require('cors')
-const { MongoClient, ServerApiVersion } = require('mongodb')
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb')
 require('dotenv').config()
 
 const port = process.env.PORT || 5000;
@@ -40,9 +40,39 @@ async function run() {
         const result = await jobsCollection.find().toArray();
         res.send(result)
         // console.log(result)
-        
+
       } catch (error) {
-        console.error('Error fetching jobs:', error); 
+        console.error('Error fetching jobs:', error);
+        res.status(500).send({ message: 'Internal Server Error' });
+      }
+    })
+    // get the jobs posted by the specific user 
+    app.get('/user/posted-job/:email', async (req, res) => {
+      const email = req.params.email;
+      try {
+        // const postedJobs = await jobsCollection.find({ 'buyer.email': email }).toArray();
+        const query = { 'buyer.email': email };
+        const postedJobs = await jobsCollection.find(query).toArray();
+        res.send(postedJobs)
+      } catch (error) {
+        console.error('Error fetching posted jobs:', error);
+        res.status(500).send({ message: 'Internal Server Error' });
+      }
+    })
+    // delete a job from db 
+    app.delete('/posted-job/delete/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) }
+      try {
+        const result = await jobsCollection.deleteOne(query)
+        // console.log(result)
+        if (result.deletedCount === 1) {
+          res.send({ message: 'Job successfully deleted', result });
+        } else {
+          res.status(404).send({ message: 'Job not found' });
+        }
+      } catch (error) {
+        console.error('Error deleting job:', error); 
         res.status(500).send({ message: 'Internal Server Error' });
       }
     })
