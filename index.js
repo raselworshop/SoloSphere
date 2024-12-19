@@ -31,8 +31,20 @@ async function run() {
       const jobData = req.body;
       // console.log(jobData)
       const result = await jobsCollection.insertOne(jobData);
-      console.log('The result is: ',result)
+      // console.log('The result is: ',result)
       res.send(result)
+    })
+    // get all jobs data from db 
+    app.get('/jobs', async (req, res) => {
+      try {
+        const result = await jobsCollection.find().toArray();
+        res.send(result)
+        // console.log(result)
+        
+      } catch (error) {
+        console.error('Error fetching jobs:', error); 
+        res.status(500).send({ message: 'Internal Server Error' });
+      }
     })
     // Send a ping to confirm a successful connection
     await client.db('admin').command({ ping: 1 })
