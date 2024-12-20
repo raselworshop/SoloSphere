@@ -59,6 +59,43 @@ async function run() {
         res.status(500).send({ message: 'Internal Server Error' });
       }
     })
+    // get a single job data by id for update the job 
+    app.get('/update/job/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) }
+      try {
+        const result = await jobsCollection.findOne(query)
+        // console.log(result)
+        if (result) {
+          res.send({ message: 'Job fetched successfully', result });
+        } else {
+          res.status(404).send({ message: 'Job not found' });
+        }
+      } catch (error) {
+        console.error('Error fetching job:', error);
+        res.status(500).send({ message: 'Internal Server Error' });
+      }
+
+    })
+    // insert updated data to db 
+    app.put('/recruiter/update-job/:id', async (req, res) => {
+      const id = req.params.id;
+      const jobData = req.body;
+      // console.log(jobData)
+      const query = { _id: new ObjectId(id) }
+      const updated = {
+        $set: jobData,
+      }
+      const options = { upsert: false }
+      try {
+        const result = await jobsCollection.updateOne(query, updated, options);
+        // console.log('The result is: ',result)
+        res.send(result)
+      } catch (error) {
+        console.error('Error updating job:', error);
+        res.status(500).send({ message: 'Internal Server Error' });
+      }
+    })
     // delete a job from db 
     app.delete('/posted-job/delete/:id', async (req, res) => {
       const id = req.params.id;
@@ -72,7 +109,7 @@ async function run() {
           res.status(404).send({ message: 'Job not found' });
         }
       } catch (error) {
-        console.error('Error deleting job:', error); 
+        console.error('Error deleting job:', error);
         res.status(500).send({ message: 'Internal Server Error' });
       }
     })
