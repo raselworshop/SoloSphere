@@ -24,7 +24,8 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
 
-    const jobsCollection = client.db('soloSphere').collection('jobs')
+    const jobsCollection = client.db('soloSphere').collection('jobs');
+    const bidsCollection = client.db('soloSphere').collection('bids')
 
     // save jobs in db 
     app.post('/recruiter/add-job', async (req, res) => {
@@ -112,6 +113,29 @@ async function run() {
         console.error('Error deleting job:', error);
         res.status(500).send({ message: 'Internal Server Error' });
       }
+    })
+    // save bid in db 
+    app.post('/client/add-bid', async (req, res) => {
+      //1 save bids data in bidsCollection
+      const bidData = req.body;
+      // check if the user already bid in the job 
+      const query = {email: bidData.email, bidId: bidData.bidId};
+      const alreadyExist = await bidsCollection.findOne(query)
+      console.log(alreadyExist)
+      if(alreadyExist){
+        return res.status(400).send({message:"You have already bid on this project!"})
+      }
+      // console.log(bidData)
+      const result = await bidsCollection.insertOne(bidData);
+
+      //2 increase bids count in jobs collection
+      const filter = {_id: new ObjectId(bidData.bidId)} 
+      console.log(filter)
+      const update = {
+        $inc:{bid_count: 1}
+      }
+      const updateBidCount = await jobsCollection.updateOne(filter, update)
+      res.send(result)
     })
     // Send a ping to confirm a successful connection
     await client.db('admin').command({ ping: 1 })
