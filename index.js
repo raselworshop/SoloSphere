@@ -119,24 +119,59 @@ async function run() {
       //1 save bids data in bidsCollection
       const bidData = req.body;
       // check if the user already bid in the job 
-      const query = {email: bidData.email, bidId: bidData.bidId};
+      const query = { email: bidData.email, bidId: bidData.bidId };
       const alreadyExist = await bidsCollection.findOne(query)
       console.log(alreadyExist)
-      if(alreadyExist){
-        return res.status(400).send({message:"You have already bid on this project!"})
+      if (alreadyExist) {
+        return res.status(400).send({ message: "You have already bid on this project!" })
       }
       // console.log(bidData)
       const result = await bidsCollection.insertOne(bidData);
 
       //2 increase bids count in jobs collection
-      const filter = {_id: new ObjectId(bidData.bidId)} 
+      const filter = { _id: new ObjectId(bidData.bidId) }
       console.log(filter)
       const update = {
-        $inc:{bid_count: 1}
+        $inc: { bid_count: 1 }
       }
       const updateBidCount = await jobsCollection.updateOne(filter, update)
       res.send(result)
     })
+    // get all bids for a specific user
+    app.get('/client/my-bids/:email', async (req, res) => {
+      const isBuyer = req.query.buyer;
+      console.log(isBuyer)
+      const email = req.params.email;
+      let query = {};
+      if(isBuyer){
+        // const query = { buyerEmail: email };
+        query.buyerEmail = email;
+      }else{
+        // const query = { email };
+        query.email = email;
+      }
+      const result= await bidsCollection.find(query).toArray();
+      res.send(result)
+    })
+    // Update bid status 
+    app.patch('/update-bid-status/:id', async (req, res) => {
+      const id = req.params.id;
+      const {status} = req.body;
+      const filter = {_id: new ObjectId(id)}
+      const update ={
+        $set:{status}
+      }
+      const result = await bidsCollection.updateOne(filter, update)
+      res.send(result)
+
+    })
+    // get all requested bids for a specific user/recruiter no need bcz this one is rendered abouve conditionally
+    // app.get('/recruiter/requested-bids/:email', async (req, res) => {
+    //   const email = req.params.email;
+    //   const query = { buyerEmail: email };
+    //   const result= await bidsCollection.find(query).toArray();
+    //   res.send(result)
+    // })
     // Send a ping to confirm a successful connection
     await client.db('admin').command({ ping: 1 })
     console.log(
