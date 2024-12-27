@@ -165,6 +165,24 @@ async function run() {
       res.send(result)
 
     })
+    app.get('/all-jobs', async (req, res) => {
+      const filter = req.query.filter;
+      const search = req.query.search;
+      const sort = req.query.sort;
+      let options = {};
+      if(sort){
+        options = {sort: {deadline: sort=== 'asc' ? 1 : -1}}
+      }
+      console.log(search)
+      let query = {
+        title:{
+          $regex: search, $options: "i"
+        }
+      };
+      if(filter){ query.category = filter;}
+      const result = await jobsCollection.find(query, options).toArray();
+      res.send(result)
+    })
     // get all requested bids for a specific user/recruiter no need bcz this one is rendered abouve conditionally
     // app.get('/recruiter/requested-bids/:email', async (req, res) => {
     //   const email = req.params.email;
