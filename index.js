@@ -1,12 +1,19 @@
 const express = require('express')
 const cors = require('cors')
+const jwt = require('jsonwebtoken')
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb')
 require('dotenv').config()
 
 const port = process.env.PORT || 5000;
 const app = express()
-
-app.use(cors())
+const corsOptions = {
+  origin:[
+    "http://localhost:5173",
+  ],
+  credentials: true,
+  optionalSuccessStatus: 200,
+}
+app.use(cors(corsOptions))
 app.use(express.json())
 
 // const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@main.yolij.mongodb.net/?retryWrites=true&w=majority&appName=Main`
@@ -26,6 +33,30 @@ async function run() {
 
     const jobsCollection = client.db('soloSphere').collection('jobs');
     const bidsCollection = client.db('soloSphere').collection('bids')
+
+    // generate jwt 
+    app.post('/jwt', async (req, res) => {
+      const email = req.body;
+      // create token 
+      const token = jwt.sign(email, process.env.SECRET_TOKEN, {expiresIn: '5h'})
+      console.log(token)
+      res
+      .cookie('token', token, {
+        httpOnly:true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: process.env.NODE_ENV === "production" ? 'none' : 'strict'
+      })
+      .send({success: true})
+    })
+    // logout/cookie clear 
+    app.get('/logout', async (req, res) => {
+      res.clearCookie('token',{
+        maxAge: 0,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: process.env.NODE_ENV === "production" ? 'none' : 'strict'
+      })
+      .send({success: true})
+    })
 
     // save jobs in db 
     app.post('/recruiter/add-job', async (req, res) => {
